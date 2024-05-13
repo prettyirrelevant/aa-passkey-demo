@@ -8,6 +8,7 @@ import { createWalletClient, custom, parseEther } from 'viem';
 import { UserOperationCallData, WalletClientSigner, polygonAmoy } from '@alchemy/aa-core';
 import { AlchemySmartAccountClient, createModularAccountAlchemyClient } from '@alchemy/aa-alchemy';
 import { MultiOwnerModularAccount } from '@alchemy/aa-accounts';
+import { BaseError } from 'wagmi';
 
 function App() {
   const { ready, authenticated, user } = usePrivy();
@@ -66,8 +67,8 @@ function App() {
         toast.error(uoSimResult.error.message);
         return;
       }
-    } catch (error) {
-      toast.error(JSON.stringify(error));
+    } catch (error: unknown) {
+      toast.error(`An error occurred during simulation: ${error.details}`);
       return;
     } finally {
       setIsSendingTx(false);
@@ -81,7 +82,7 @@ function App() {
       const txHash = await smartAccountClient?.waitForUserOperationTransaction({ hash: uo?.hash as `0x${string}` });
       toast.success(`Transaction successful. Check here https://amoy.polygonscan.com/tx/${txHash}`);
     } catch (error) {
-      toast.error(JSON.stringify(error));
+      toast.error(`An error occurred while sending the transaction: ${error.details}`);
       return;
     } finally {
       setIsSendingTx(false);
@@ -94,6 +95,7 @@ function App() {
 
   return (
     <Container maxWidth="40rem" m={{ initial: '0.5rem', sm: '0' }} pb="5rem">
+      <Toaster richColors toastOptions={{ duration: 10000 }} />
       <Flex direction="column" gap="4" className="">
         <Logo />
 
@@ -134,7 +136,6 @@ function App() {
           </Callout.Root>
         )}
       </Flex>
-      <Toaster richColors toastOptions={{ duration: 10000 }} />
     </Container>
   );
 }
