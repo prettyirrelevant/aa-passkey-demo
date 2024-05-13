@@ -1,13 +1,11 @@
-import { http, createConfig } from 'wagmi';
-import { injected } from 'wagmi/connectors';
-import { mainnet, sepolia } from 'wagmi/chains';
+import { createConfig } from '@privy-io/wagmi';
+import { polygonAmoy } from 'viem/chains';
+import { http } from 'wagmi';
 
 export const config = createConfig({
-  chains: [mainnet, sepolia],
-  connectors: [injected()],
+  chains: [polygonAmoy],
   transports: {
-    [mainnet.id]: http(),
-    [sepolia.id]: http(),
+    [polygonAmoy.id]: http(),
   },
 });
 

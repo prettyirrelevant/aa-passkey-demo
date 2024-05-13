@@ -1,23 +1,26 @@
 import { Container, Flex, Blockquote, Code, Callout, Strong, Button } from '@radix-ui/themes';
-import { Toaster } from 'sonner';
+import { Toaster, toast } from 'sonner';
 import { ConnectedWallet, useMfaEnrollment, usePrivy, useWallets } from '@privy-io/react-auth';
 import { Logo } from './components/Logo';
 import { Info, KeyRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { createWalletClient, custom } from 'viem';
-import { WalletClientSigner, polygonAmoy } from '@alchemy/aa-core';
+import { createWalletClient, custom, parseEther } from 'viem';
+import { UserOperationCallData, WalletClientSigner, polygonAmoy } from '@alchemy/aa-core';
 import { AlchemySmartAccountClient, createModularAccountAlchemyClient } from '@alchemy/aa-alchemy';
+import { MultiOwnerModularAccount } from '@alchemy/aa-accounts';
 
 function App() {
   const { ready, authenticated, user } = usePrivy();
 
   const { wallets } = useWallets();
-  const isMfaEnabled = user?.mfaMethods.length ?? 0 > 0;
   const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === 'privy');
 
-  const [isSmartAccountReady, setIsSmartAccountReady] = useState(false);
+  const isMfaEnabled = user?.mfaMethods.length ?? 0 > 0;
   const { showMfaEnrollmentModal } = useMfaEnrollment();
+  const [isSmartAccountReady, setIsSmartAccountReady] = useState(false);
+  const [isSendingTx, setIsSendingTx] = useState(false);
   const [smartAccountClient, setSmartAccountClient] = useState<AlchemySmartAccountClient | null>(null);
+  const [smartAccount, setSmartAccount] = useState<MultiOwnerModularAccount<WalletClientSigner> | null>(null);
 
   const createSmartWallet = async (privyEoa: ConnectedWallet) => {
     const privyProvider = await privyEoa.getEthereumProvider();
@@ -28,11 +31,49 @@ function App() {
     const privySigner = new WalletClientSigner(privyClient, 'json-rpc');
     const smartAccountClient = await createModularAccountAlchemyClient({
       apiKey: import.meta.env.VITE_ALCHEMY_API_KEY,
+      gasManagerConfig: {
+        policyId: 'a2d085f2-1c1c-4c58-bad8-57a9ef0ae56f',
+      },
       signer: privySigner,
       chain: polygonAmoy,
     });
+
+    setSmartAccount(smartAccountClient.account);
     setSmartAccountClient(smartAccountClient);
     setIsSmartAccountReady(true);
+  };
+
+  const sendSampleTx = async () => {
+    if (!smartAccount || !smartAccountClient) {
+      toast.error('Cannot send sample transaction at the moment.');
+      return;
+    }
+
+    setIsSendingTx(true)
+    const uoPayload: UserOperationCallData = {
+      data: '0x',
+      value: parseEther('0.0001'),
+      target: '0xDaDC3e4Fa2CF41BC4ea0aD0e627935A5c2DB433d',
+    };
+
+    const uoSimResult = await smartAccountClient.simulateUserOperation({
+      uo: uoPayload,
+      account: smartAccount,
+    });
+    if (uoSimResult.error) {
+      toast.error(uoSimResult.error.message);
+      return;
+    }
+
+    const uo = await smartAccountClient.sendUserOperation({
+      uo: uoPayload,
+      account: smartAccount,
+    });
+
+    const txHash = await smartAccountClient?.waitForUserOperationTransaction({ hash: uo?.hash as `0x${string}` });
+    toast.success(`Transaction successful. Check here https://amoy.polygonscan.com/tx/${txHash}`);
+
+    setIsSendingTx(false);
   };
 
   useEffect(() => {
@@ -56,6 +97,10 @@ function App() {
 
               <Button size="3" variant="soft" onClick={showMfaEnrollmentModal}>
                 <KeyRound /> {isMfaEnabled ? 'manage' : 'link'} passkey(or totp)
+              </Button>
+
+              <Button size="3" variant="soft" onClick={sendSampleTx} loading={isSendingTx}>
+                send 0.0001 matic to 0xDaDC3e4Fa2CF41BC4ea0aD0e627935A5c2DB433d
               </Button>
             </>
           ) : (
