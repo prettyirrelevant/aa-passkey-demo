@@ -49,31 +49,43 @@ function App() {
       return;
     }
 
-    setIsSendingTx(true)
+    setIsSendingTx(true);
+
     const uoPayload: UserOperationCallData = {
       data: '0x',
       value: parseEther('0.0001'),
       target: '0xDaDC3e4Fa2CF41BC4ea0aD0e627935A5c2DB433d',
     };
 
-    const uoSimResult = await smartAccountClient.simulateUserOperation({
-      uo: uoPayload,
-      account: smartAccount,
-    });
-    if (uoSimResult.error) {
-      toast.error(uoSimResult.error.message);
+    try {
+      const uoSimResult = await smartAccountClient.simulateUserOperation({
+        uo: uoPayload,
+        account: smartAccount,
+      });
+      if (uoSimResult.error) {
+        toast.error(uoSimResult.error.message);
+        return;
+      }
+    } catch (error) {
+      toast.error(JSON.stringify(error));
       return;
+    } finally {
+      setIsSendingTx(false);
     }
 
-    const uo = await smartAccountClient.sendUserOperation({
-      uo: uoPayload,
-      account: smartAccount,
-    });
-
-    const txHash = await smartAccountClient?.waitForUserOperationTransaction({ hash: uo?.hash as `0x${string}` });
-    toast.success(`Transaction successful. Check here https://amoy.polygonscan.com/tx/${txHash}`);
-
-    setIsSendingTx(false);
+    try {
+      const uo = await smartAccountClient.sendUserOperation({
+        uo: uoPayload,
+        account: smartAccount,
+      });
+      const txHash = await smartAccountClient?.waitForUserOperationTransaction({ hash: uo?.hash as `0x${string}` });
+      toast.success(`Transaction successful. Check here https://amoy.polygonscan.com/tx/${txHash}`);
+    } catch (error) {
+      toast.error(JSON.stringify(error));
+      return;
+    } finally {
+      setIsSendingTx(false);
+    }
   };
 
   useEffect(() => {
