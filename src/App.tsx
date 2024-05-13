@@ -5,7 +5,7 @@ import { Logo } from './components/Logo';
 import { Info, KeyRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createWalletClient, custom, parseEther } from 'viem';
-import { UserOperationCallData, WalletClientSigner, polygonAmoy } from '@alchemy/aa-core';
+import { BaseError, UserOperationCallData, WalletClientSigner, polygonAmoy } from '@alchemy/aa-core';
 import { AlchemySmartAccountClient, createModularAccountAlchemyClient } from '@alchemy/aa-alchemy';
 import { MultiOwnerModularAccount } from '@alchemy/aa-accounts';
 
@@ -66,8 +66,8 @@ function App() {
         toast.error(uoSimResult.error.message);
         return;
       }
-    } catch (error: unknown) {
-      toast.error(`An error occurred during simulation: ${error.details}`);
+    } catch (error) {
+      toast.error(`An error occurred during simulation: ${(error as BaseError).details}`);
       return;
     } finally {
       setIsSendingTx(false);
@@ -81,7 +81,7 @@ function App() {
       const txHash = await smartAccountClient?.waitForUserOperationTransaction({ hash: uo?.hash as `0x${string}` });
       toast.success(`Transaction successful. Check here https://amoy.polygonscan.com/tx/${txHash}`);
     } catch (error) {
-      toast.error(`An error occurred while sending the transaction: ${error.details}`);
+      toast.error(`An error occurred while sending the transaction: ${(error as BaseError).details}`);
       return;
     } finally {
       setIsSendingTx(false);
