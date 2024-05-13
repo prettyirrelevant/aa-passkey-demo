@@ -8,7 +8,6 @@ import { createWalletClient, custom, parseEther } from 'viem';
 import { UserOperationCallData, WalletClientSigner, polygonAmoy } from '@alchemy/aa-core';
 import { AlchemySmartAccountClient, createModularAccountAlchemyClient } from '@alchemy/aa-alchemy';
 import { MultiOwnerModularAccount } from '@alchemy/aa-accounts';
-import { BaseError } from 'wagmi';
 
 function App() {
   const { ready, authenticated, user } = usePrivy();
