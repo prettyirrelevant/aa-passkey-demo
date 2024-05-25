@@ -10,10 +10,11 @@ import { AlchemySmartAccountClient, createModularAccountAlchemyClient } from '@a
 import { MultiOwnerModularAccount } from '@alchemy/aa-accounts';
 
 function App() {
-  const { ready, authenticated, user } = usePrivy();
+  const { ready, authenticated, user, getAccessToken } = usePrivy();
 
   const { wallets } = useWallets();
   const embeddedWallet = wallets.find((wallet) => wallet.walletClientType === 'privy');
+  const [accessToken, setAccessToken] = useState<string | null>();
 
   const isMfaEnabled = user?.mfaMethods.length ?? 0 > 0;
   const { showMfaEnrollmentModal } = useMfaEnrollment();
@@ -92,6 +93,16 @@ function App() {
     embeddedWallet?.address ? createSmartWallet(embeddedWallet) : null;
   }, [embeddedWallet?.address]);
 
+  useEffect(() => {
+    const updateAccessToken = async () => {
+      const accessToken = await getAccessToken();
+      setAccessToken(accessToken);
+    };
+
+    updateAccessToken();
+
+  }, [authenticated])
+
   return (
     <Container maxWidth="40rem" m={{ initial: '0.5rem', sm: '0' }} pb="5rem">
       <Toaster richColors toastOptions={{ duration: 10000 }} />
@@ -115,6 +126,9 @@ function App() {
               <Button size="3" variant="soft" onClick={sendSampleTx} loading={isSendingTx}>
                 send 0.0001 matic to 0xDaDC3e4Fa2CF41BC4ea0aD0e627935A5c2DB433d
               </Button>
+              <Blockquote>
+                Access Token: <Code>{accessToken}</Code>
+              </Blockquote>
             </>
           ) : (
             <Callout.Root color="blue">

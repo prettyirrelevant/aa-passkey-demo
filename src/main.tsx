@@ -27,6 +27,10 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             createOnLogin: 'users-without-wallets',
             noPromptOnSignature: false,
           },
+          captchaEnabled: true,
+          mfa: {
+            noPromptOnMfaRequired: true,
+          },
         }}
       >
         <QueryClientProvider client={queryClient}>
